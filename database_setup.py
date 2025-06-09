@@ -13,7 +13,7 @@ def create_products_db():
     conn = sqlite3.connect(PRODUCTS_DB)
     cursor = conn.cursor()
 
-    # 📦 Create Products Table
+    #  Create Products Table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS products (
             product_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,7 +26,7 @@ def create_products_db():
 
     conn.commit()
     conn.close()
-    print("✅ Products database created!")
+    print(" Products database created!")
 
 def create_admin_purchases_db():
     """Creates the admin purchases database."""
@@ -36,7 +36,7 @@ def create_admin_purchases_db():
     conn = sqlite3.connect(ADMIN_PURCHASES_DB)
     cursor = conn.cursor()
 
-    # 🏪 Create Admin Purchases Table
+    # Create Admin Purchases Table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS admin_purchases (
             purchase_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,7 +52,7 @@ def create_admin_purchases_db():
 
     conn.commit()
     conn.close()
-    print("✅ Admin Purchases database created!")
+    print(" Admin Purchases database created!")
 
 def sync_purchases_to_products():
     """Syncs the latest purchases from `admin_purchases.db` to `products.db`."""
@@ -96,7 +96,7 @@ def sync_purchases_to_products():
     conn_products.commit()
     conn_admin.close()
     conn_products.close()
-    print("✅ Syncing complete!")
+    print(" Syncing complete!")
 
 if __name__ == "__main__":
     create_products_db()
