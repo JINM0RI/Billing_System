@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+<<<<<<< HEAD
 import { apiFetch, getSessionRole } from '../lib/api';
 import type { Employee, RoleName } from '../types';
 
@@ -10,6 +11,15 @@ export default function EmployeesPage() {
   const [form, setForm] = useState({ username: '', full_name: '', password: '', role_id: 3 });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+=======
+import { apiFetch } from '../lib/api';
+import type { Employee, RoleName } from '../types';
+
+export default function EmployeesPage() {
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [roles, setRoles] = useState<Array<{ id: number; name: RoleName; description?: string | null }>>([]);
+  const [form, setForm] = useState({ username: '', full_name: '', password: '', role_id: 3 });
+>>>>>>> 4c670f3f5d2d8ea09a7bf11f18be6914d088aac9
 
   async function loadData() {
     const [employeeData, roleData] = await Promise.all([
@@ -18,9 +28,12 @@ export default function EmployeesPage() {
     ]);
     setEmployees(employeeData);
     setRoles(roleData);
+<<<<<<< HEAD
     if (roleData.length && form.role_id === 3) {
       setForm((current) => ({ ...current, role_id: roleData[0].id }));
     }
+=======
+>>>>>>> 4c670f3f5d2d8ea09a7bf11f18be6914d088aac9
   }
 
   useEffect(() => {
@@ -29,6 +42,7 @@ export default function EmployeesPage() {
 
   async function submitEmployee(event: FormEvent) {
     event.preventDefault();
+<<<<<<< HEAD
     setError(null);
     setSuccess(null);
 
@@ -61,6 +75,14 @@ export default function EmployeesPage() {
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Unable to create employee.');
     }
+=======
+    await apiFetch('/employees', {
+      method: 'POST',
+      body: JSON.stringify({ ...form, full_name: form.full_name || null }),
+    });
+    setForm({ username: '', full_name: '', password: '', role_id: roles[0]?.id ?? 3 });
+    await loadData();
+>>>>>>> 4c670f3f5d2d8ea09a7bf11f18be6914d088aac9
   }
 
   return (
@@ -79,9 +101,13 @@ export default function EmployeesPage() {
               </option>
             ))}
           </select>
+<<<<<<< HEAD
           {error ? <p className="rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p> : null}
           {success ? <p className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">{success}</p> : null}
           <button className="btn-primary w-full" type="submit" disabled={!canCreate}>Create employee</button>
+=======
+          <button className="btn-primary w-full" type="submit">Create employee</button>
+>>>>>>> 4c670f3f5d2d8ea09a7bf11f18be6914d088aac9
         </div>
       </form>
 

@@ -20,6 +20,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   });
 
   if (!response.ok) {
+<<<<<<< HEAD
     const contentType = response.headers.get('content-type') ?? '';
     if (contentType.includes('application/json')) {
       const data = await response.json().catch(() => null);
@@ -38,6 +39,8 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
       }
       throw new Error(JSON.stringify(data) || `Request failed with ${response.status}`);
     }
+=======
+>>>>>>> 4c670f3f5d2d8ea09a7bf11f18be6914d088aac9
     const error = await response.text();
     throw new Error(error || `Request failed with ${response.status}`);
   }

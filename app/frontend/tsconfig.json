@@ -10,7 +10,11 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
+<<<<<<< HEAD
     "moduleResolution": "Bundler",
+=======
+    "moduleResolution": "Node",
+>>>>>>> 4c670f3f5d2d8ea09a7bf11f18be6914d088aac9
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
