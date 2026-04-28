@@ -73,8 +73,8 @@ class AdminDashboard(QWidget):
 
     def open_billing(self):
         """Opens the Billing System."""
-        if os.path.exists("test.py"):
-            Popen(["python", "test.py"])
+        if os.path.exists("Billing.py"):
+            Popen(["python", "Billing.py"])
         else:
             QMessageBox.warning(self, "Error", "Billing system file not found!")
 
