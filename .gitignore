@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+*.pdb
+*.egg-info/
+.eggs/
+.env
+.venv/
+.venv*/
+venv/
+ENV/
+
+# FastAPI / Uvicorn
+*.log
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Electron / Node
+node_modules/
+
+# Vite / build outputs
+app/frontend/dist/
+app/frontend/.vite/
+
+# Electron build outputs
+app/electron/dist/
+app/electron/out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
