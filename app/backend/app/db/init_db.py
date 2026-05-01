@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from sqlalchemy import text
+
 from app.core.config import settings
 from app.core.security import hash_password
 from app.db.models import Base, Role, TaxSetting, User
@@ -43,7 +45,58 @@ def seed_reference_data() -> None:
         db.close()
 
 
+def normalize_user_names() -> None:
+    with engine.begin() as connection:
+        connection.execute(text("UPDATE users SET full_name = username WHERE full_name IS NULL OR full_name = ''"))
+        connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_users_full_name ON users(full_name)"))
+
+
+def ensure_product_measuring_type() -> None:
+    with engine.begin() as connection:
+        columns = [row[1] for row in connection.execute(text("PRAGMA table_info(products)"))]
+        if "measuring_type" not in columns:
+            connection.execute(text("ALTER TABLE products ADD COLUMN measuring_type TEXT DEFAULT 'pieces'"))
+            connection.execute(text("UPDATE products SET measuring_type = 'pieces' WHERE measuring_type IS NULL"))
+
+
+def ensure_purchases_schema() -> None:
+    with engine.begin() as connection:
+        columns = [row[1] for row in connection.execute(text("PRAGMA table_info(purchases)"))]
+        if not columns or "sale_price" not in columns:
+            return
+
+        connection.execute(
+            text(
+                """
+                CREATE TABLE purchases_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    product_id INTEGER NOT NULL,
+                    purchased_from TEXT NOT NULL,
+                    purchase_price FLOAT NOT NULL,
+                    count INTEGER NOT NULL,
+                    created_at DATETIME NOT NULL,
+                    FOREIGN KEY(product_id) REFERENCES products(id)
+                )
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                INSERT INTO purchases_new (id, product_id, purchased_from, purchase_price, count, created_at)
+                SELECT id, product_id, purchased_from, purchase_price, count, created_at
+                FROM purchases
+                """
+            )
+        )
+        connection.execute(text("DROP TABLE purchases"))
+        connection.execute(text("ALTER TABLE purchases_new RENAME TO purchases"))
+
+
 def init_db() -> None:
     ensure_database_path()
     Base.metadata.create_all(bind=engine)
     seed_reference_data()
+    normalize_user_names()
+    ensure_product_measuring_type()
+    ensure_purchases_schema()

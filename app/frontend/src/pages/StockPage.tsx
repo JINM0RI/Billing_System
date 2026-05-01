@@ -25,18 +25,16 @@ export default function StockPage() {
             <thead className="bg-white/5 text-slate-300">
               <tr>
                 <th className="px-4 py-3">Product</th>
-                <th className="px-4 py-3">Category</th>
                 <th className="px-4 py-3">Stock</th>
-                <th className="px-4 py-3">Price</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10 bg-slate-950/40 text-slate-100">
               {products.map((product) => (
                 <tr key={product.id}>
                   <td className="px-4 py-3">{product.name}</td>
-                  <td className="px-4 py-3">{product.category}</td>
-                  <td className="px-4 py-3">{product.current_stock}</td>
-                  <td className="px-4 py-3">${product.unit_price.toFixed(2)}</td>
+                  <td className="px-4 py-3">
+                    {product.current_stock} {product.measuring_type}
+                  </td>
                 </tr>
               ))}
             </tbody>

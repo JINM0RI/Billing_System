@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import { useEffect, useState, type FormEvent } from 'react';
-=======
-import { useState, type FormEvent } from 'react';
->>>>>>> 4c670f3f5d2d8ea09a7bf11f18be6914d088aac9
 import { useNavigate } from 'react-router-dom';
 import { LockKeyhole, Sparkles } from 'lucide-react';
 import { apiFetch, setSession } from '../lib/api';
@@ -10,7 +6,6 @@ import type { AuthResponse } from '../lib/api';
 
 export default function LoginPage({ onLogin }: { onLogin: (role: string) => void }) {
   const [username, setUsername] = useState('admin');
-<<<<<<< HEAD
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -36,15 +31,6 @@ export default function LoginPage({ onLogin }: { onLogin: (role: string) => void
       setError('Password is required.');
       return;
     }
-=======
-  const [password, setPassword] = useState('Admin@12345!');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
->>>>>>> 4c670f3f5d2d8ea09a7bf11f18be6914d088aac9
     setLoading(true);
     setError(null);
     try {
@@ -62,7 +48,6 @@ export default function LoginPage({ onLogin }: { onLogin: (role: string) => void
     }
   }
 
-<<<<<<< HEAD
   async function handleBootstrap(event: FormEvent) {
     event.preventDefault();
     setLoading(true);
@@ -85,9 +70,6 @@ export default function LoginPage({ onLogin }: { onLogin: (role: string) => void
       setLoading(false);
     }
   }
-
-=======
->>>>>>> 4c670f3f5d2d8ea09a7bf11f18be6914d088aac9
   return (
     <div className="grid min-h-screen place-items-center px-4">
       <div className="panel w-full max-w-[980px] overflow-hidden lg:grid lg:grid-cols-[1.05fr_0.95fr]">
@@ -110,7 +92,6 @@ export default function LoginPage({ onLogin }: { onLogin: (role: string) => void
             <LockKeyhole size={18} />
             <span className="text-sm uppercase tracking-[0.24em]">Secure sign-in</span>
           </div>
-<<<<<<< HEAD
           {bootstrapMode ? (
             <>
               <h2 className="text-3xl font-semibold text-white">Create admin account</h2>
@@ -159,7 +140,7 @@ export default function LoginPage({ onLogin }: { onLogin: (role: string) => void
 
               <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
                 <div>
-                  <label className="mb-2 block text-sm text-slate-300">Username</label>
+                  <label className="mb-2 block text-sm text-slate-300">Full name</label>
                   <input className="field" value={username} onChange={(event) => setUsername(event.target.value)} />
                 </div>
                 <div>
@@ -188,25 +169,6 @@ export default function LoginPage({ onLogin }: { onLogin: (role: string) => void
               </form>
             </>
           )}
-=======
-          <h2 className="text-3xl font-semibold text-white">Welcome back</h2>
-          <p className="mt-2 text-slate-400">Sign in with the local demo account or your own managed user.</p>
-
-          <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
-            <div>
-              <label className="mb-2 block text-sm text-slate-300">Username</label>
-              <input className="field" value={username} onChange={(event) => setUsername(event.target.value)} />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm text-slate-300">Password</label>
-              <input className="field" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
-            </div>
-            {error ? <p className="rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p> : null}
-            <button className="btn-primary w-full" disabled={loading} type="submit">
-              {loading ? 'Signing in…' : 'Enter Dashboard'}
-            </button>
-          </form>
->>>>>>> 4c670f3f5d2d8ea09a7bf11f18be6914d088aac9
         </div>
       </div>
     </div>

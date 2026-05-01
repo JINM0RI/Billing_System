@@ -22,7 +22,7 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
-    full_name: Mapped[str | None] = mapped_column(String(150))
+    full_name: Mapped[str] = mapped_column(String(150), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
@@ -64,9 +64,10 @@ class Product(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sku: Mapped[str] = mapped_column(String(80), unique=True, nullable=False, index=True)
-    name: Mapped[str] = mapped_column(String(150), unique=True, nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(150), nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(Text)
     category: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    measuring_type: Mapped[str] = mapped_column(String(20), default="pieces", nullable=False)
     unit_price: Mapped[float] = mapped_column(Float, nullable=False)
     tax_rate: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     low_stock_threshold: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
@@ -75,6 +76,9 @@ class Product(Base):
 
     inventory_records: Mapped[list["Inventory"]] = relationship(back_populates="product")
     invoice_items: Mapped[list["InvoiceItem"]] = relationship(back_populates="product")
+    purchase_records: Mapped[list["PurchaseRecord"]] = relationship(back_populates="product")
+
+    __table_args__ = (UniqueConstraint("name", "category", "measuring_type", name="uq_products_name_category_measure"),)
 
 
 class Inventory(Base):
@@ -91,6 +95,19 @@ class Inventory(Base):
 
     product: Mapped[Product] = relationship(back_populates="inventory_records")
     storage_location: Mapped[StorageLocation] = relationship(back_populates="inventory_items")
+
+
+class PurchaseRecord(Base):
+    __tablename__ = "purchases"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
+    purchased_from: Mapped[str] = mapped_column(String(150), nullable=False)
+    purchase_price: Mapped[float] = mapped_column(Float, nullable=False)
+    count: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    product: Mapped[Product] = relationship(back_populates="purchase_records")
 
 
 class Invoice(Base):

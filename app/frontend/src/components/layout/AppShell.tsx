@@ -1,12 +1,13 @@
 import { NavLink } from 'react-router-dom';
-import { ActivitySquare, Boxes, Building2, LogOut, ReceiptText, Settings2, ShieldCheck, ShoppingBag, Users2 } from 'lucide-react';
+import { ActivitySquare, Boxes, Building2, LogOut, ReceiptText, ShieldCheck, ShoppingBag, Tag, Users2 } from 'lucide-react';
 import type { RoleName } from '../../types';
 
 const navItems = [
   { to: '/', label: 'Overview', icon: ActivitySquare, roles: ['Admin', 'Manager', 'Employee'] as RoleName[] },
   { to: '/employees', label: 'Employees', icon: Users2, roles: ['Admin', 'Manager'] as RoleName[] },
-  { to: '/storage', label: 'Storage', icon: Building2, roles: ['Admin', 'Manager', 'Employee'] as RoleName[] },
+  { to: '/purchase', label: 'Purchase', icon: Building2, roles: ['Admin', 'Manager', 'Employee'] as RoleName[] },
   { to: '/stock', label: 'Stock', icon: Boxes, roles: ['Admin', 'Manager', 'Employee'] as RoleName[] },
+  { to: '/product', label: 'Product', icon: Tag, roles: ['Admin', 'Manager', 'Employee'] as RoleName[] },
   { to: '/billing', label: 'Billing', icon: ReceiptText, roles: ['Admin', 'Manager', 'Employee'] as RoleName[] },
   { to: '/sales', label: 'Sales', icon: ShoppingBag, roles: ['Admin', 'Manager'] as RoleName[] },
 ];
@@ -54,13 +55,6 @@ export default function AppShell({ role, onLogout, children }: { role: RoleName;
         </aside>
 
         <main className="flex min-h-screen flex-col gap-6">
-          <header className="panel flex items-center justify-between px-6 py-4">
-            <div>
-              <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Offline-capable desktop billing</p>
-              <h2 className="text-2xl font-semibold text-white">Command Center</h2>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300">FastAPI + SQLite + Electron</div>
-          </header>
           <section className="flex-1 pb-4">{children}</section>
         </main>
       </div>

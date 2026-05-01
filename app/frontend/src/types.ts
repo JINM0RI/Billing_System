@@ -14,6 +14,7 @@ export type Product = {
   name: string;
   description?: string | null;
   category: string;
+  measuring_type: string;
   unit_price: number;
   tax_rate: number;
   low_stock_threshold: number;
@@ -32,13 +33,16 @@ export type Employee = {
   created_at: string;
 };
 
-export type StorageLocation = {
+export type PurchaseRecord = {
   id: number;
-  name: string;
-  location_type: string;
-  capacity: number;
-  utilization: number;
-  is_active: boolean;
+  code: string;
+  product_name: string;
+  category: string;
+  measuring_type: string;
+  purchased_from: string;
+  purchase_price: number;
+  count: number;
+  created_at: string;
 };
 
 export type InvoiceItemDraft = {

@@ -1,23 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from datetime import datetime
 
 from app.api.deps import get_db
-<<<<<<< HEAD
 from app.core.security import create_access_token, hash_password, record_activity, verify_password
 from app.db import models
 from app.schemas import AuthStatus, BootstrapRequest, LoginRequest, Token
-=======
-from app.core.security import create_access_token, record_activity, verify_password
-from app.db import models
-from app.schemas import LoginRequest, Token
->>>>>>> 4c670f3f5d2d8ea09a7bf11f18be6914d088aac9
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-<<<<<<< HEAD
 @router.get("/status", response_model=AuthStatus)
 def auth_status(db: Session = Depends(get_db)):
     user_count = db.query(models.User).count()
@@ -28,13 +22,13 @@ def auth_status(db: Session = Depends(get_db)):
         .count()
     )
     return AuthStatus(has_users=user_count > 0, has_admin=admin_count > 0)
-
-
-=======
->>>>>>> 4c670f3f5d2d8ea09a7bf11f18be6914d088aac9
 @router.post("/login", response_model=Token)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.username == payload.username).first()
+    user = (
+        db.query(models.User)
+        .filter(or_(models.User.username == payload.username, models.User.full_name == payload.username))
+        .first()
+    )
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
 
@@ -44,7 +38,6 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
     token = create_access_token(subject=user.username, role=user.role.name)
     return Token(access_token=token, role=user.role.name)
-<<<<<<< HEAD
 
 
 @router.post("/bootstrap", response_model=Token, status_code=status.HTTP_201_CREATED)
@@ -71,5 +64,3 @@ def bootstrap_admin(payload: BootstrapRequest, db: Session = Depends(get_db)):
 
     token = create_access_token(subject=admin.username, role=admin_role.name)
     return Token(access_token=token, role=admin_role.name)
-=======
->>>>>>> 4c670f3f5d2d8ea09a7bf11f18be6914d088aac9

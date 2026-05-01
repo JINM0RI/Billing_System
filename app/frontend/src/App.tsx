@@ -5,8 +5,9 @@ import { clearSession, getSessionRole } from './lib/api';
 import type { RoleName } from './types';
 import DashboardPage from './pages/DashboardPage';
 import EmployeesPage from './pages/EmployeesPage';
-import StoragePage from './pages/StoragePage';
+import PurchasePage from './pages/StoragePage';
 import StockPage from './pages/StockPage';
+import ProductPage from './pages/ProductPage';
 import BillingPage from './pages/BillingPage';
 import SalesPage from './pages/SalesPage';
 import LoginPage from './pages/LoginPage';
@@ -39,8 +40,9 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/employees" element={role === 'Employee' ? <Navigate to="/" replace /> : <EmployeesPage />} />
-                <Route path="/storage" element={<StoragePage />} />
+                <Route path="/purchase" element={<PurchasePage />} />
                 <Route path="/stock" element={<StockPage />} />
+                <Route path="/product" element={<ProductPage />} />
                 <Route path="/billing" element={<BillingPage />} />
                 <Route path="/sales" element={role === 'Employee' ? <Navigate to="/" replace /> : <SalesPage />} />
               </Routes>

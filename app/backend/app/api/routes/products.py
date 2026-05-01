@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_db, require_roles
 from app.db import models
-from app.schemas import ProductCreate, ProductRead, ProductUpdate, StorageLocationCreate
+from app.schemas import ProductCreate, ProductRead, ProductUpdate
 
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -23,6 +23,7 @@ def list_products(db: Session = Depends(get_db), current_user: models.User = Dep
                 name=product.name,
                 description=product.description,
                 category=product.category,
+                measuring_type=product.measuring_type,
                 unit_price=product.unit_price,
                 tax_rate=product.tax_rate,
                 low_stock_threshold=product.low_stock_threshold,
@@ -48,15 +49,27 @@ def low_stock_products(db: Session = Depends(get_db), current_user: models.User 
 
 @router.post("", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
 def create_product(payload: ProductCreate, db: Session = Depends(get_db), current_user: models.User = Depends(require_roles("Admin", "Manager"))):
-    existing = db.query(models.Product).filter((models.Product.sku == payload.sku) | (models.Product.name == payload.name)).first()
+    existing = (
+        db.query(models.Product)
+        .filter(
+            (models.Product.sku == payload.sku)
+            | (
+                (models.Product.name == payload.name)
+                & (models.Product.category == payload.category)
+                & (models.Product.measuring_type == payload.measuring_type)
+            )
+        )
+        .first()
+    )
     if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Product sku or name already exists")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Product sku or name/category/measure already exists")
 
     product = models.Product(
         sku=payload.sku,
         name=payload.name,
         description=payload.description,
         category=payload.category,
+        measuring_type=payload.measuring_type,
         unit_price=payload.unit_price,
         tax_rate=payload.tax_rate,
         low_stock_threshold=payload.low_stock_threshold,
@@ -115,6 +128,7 @@ def _to_product_read(db: Session, product: models.Product) -> ProductRead:
         name=product.name,
         description=product.description,
         category=product.category,
+        measuring_type=product.measuring_type,
         unit_price=product.unit_price,
         tax_rate=product.tax_rate,
         low_stock_threshold=product.low_stock_threshold,

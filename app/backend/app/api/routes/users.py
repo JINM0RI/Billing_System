@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
+import re
 
 from app.api.deps import get_current_user, get_db, require_roles
 from app.core.security import hash_password, record_activity
@@ -8,6 +10,21 @@ from app.schemas import RoleRead, UserCreate, UserRead, UserUpdate
 
 
 router = APIRouter(prefix="/employees", tags=["employees"])
+
+
+def _normalize_username(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", ".", value.lower()).strip(".")
+    return slug or "user"
+
+
+def _generate_unique_username(db: Session, full_name: str) -> str:
+    base = _normalize_username(full_name)
+    candidate = base
+    counter = 1
+    while db.query(models.User).filter(models.User.username == candidate).first():
+        candidate = f"{base}{counter}"
+        counter += 1
+    return candidate
 
 
 @router.get("/roles", response_model=list[RoleRead])
@@ -32,13 +49,21 @@ def create_employee(payload: UserCreate, db: Session = Depends(get_db), current_
     if not role:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
 
-    existing = db.query(models.User).filter(models.User.username == payload.username).first()
+    full_name = payload.full_name.strip()
+    if not full_name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Full name is required")
+
+    if db.query(models.User).filter(models.User.full_name == full_name).first():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Full name already exists")
+
+    username = payload.username.strip() if payload.username else _generate_unique_username(db, full_name)
+    existing = db.query(models.User).filter(models.User.username == username).first()
     if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already exists")
+        username = _generate_unique_username(db, full_name)
 
     user = models.User(
-        username=payload.username,
-        full_name=payload.full_name,
+        username=username,
+        full_name=full_name,
         password_hash=hash_password(payload.password),
         role_id=payload.role_id,
         is_active=payload.is_active,
@@ -57,7 +82,13 @@ def update_employee(user_id: int, payload: UserUpdate, db: Session = Depends(get
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
 
     if payload.full_name is not None:
-        user.full_name = payload.full_name
+        full_name = payload.full_name.strip()
+        if not full_name:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Full name is required")
+        existing = db.query(models.User).filter(models.User.full_name == full_name, models.User.id != user.id).first()
+        if existing:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Full name already exists")
+        user.full_name = full_name
     if payload.password is not None:
         user.password_hash = hash_password(payload.password)
     if payload.role_id is not None:
