@@ -2,33 +2,36 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_
 from sqlalchemy.orm import Session, joinedload
-import re
 
 from app.api.deps import get_db, require_roles
 from app.db import models
 from app.schemas import PurchaseCodePreview, PurchaseCreate, PurchaseRead
+from app.services.fifo import round_to_2
 
 
 router = APIRouter(prefix="/purchases", tags=["purchases"])
 
 
 _MEASURE_TYPES = {"kg", "liter", "pieces"}
+_CODE_START = 100000
 
 
-def _normalize_code(value: str) -> str:
-    cleaned = re.sub(r"[^a-z0-9]+", "", value.lower())
-    return cleaned
+def _next_numeric_code(db: Session) -> str:
+    codes = [row[0] for row in db.query(models.Product.sku).all()]
+    numeric_codes = [int(code) for code in codes if code and str(code).isdigit()]
+    max_code = max(numeric_codes) if numeric_codes else _CODE_START
+    candidate = max_code + 1
+    while db.query(models.Product).filter(models.Product.sku == str(candidate)).first():
+        candidate += 1
+    return str(candidate)
 
 
-def _generate_sku(db: Session, name: str, category: str, measuring_type: str) -> str:
-    base = f"{_normalize_code(category)[:3]}{_normalize_code(name)[:3]}{_normalize_code(measuring_type)[:2]}".upper()
-    base = base or "PRD"
-    candidate = base
-    counter = 1
-    while db.query(models.Product).filter(models.Product.sku == candidate).first():
-        candidate = f"{base}-{counter:03d}"
-        counter += 1
-    return candidate
+def _ensure_numeric_sku(db: Session, product: models.Product) -> str:
+    if product.sku.isdigit():
+        return product.sku
+    product.sku = _next_numeric_code(db)
+    db.flush()
+    return product.sku
 
 
 def _get_or_create_location(db: Session) -> models.StorageLocation:
@@ -86,7 +89,7 @@ def preview_code(
     if product:
         return PurchaseCodePreview(code=product.sku, exists=True)
 
-    code = _generate_sku(db, name.strip(), category.strip(), normalized_measure)
+    code = _next_numeric_code(db)
     return PurchaseCodePreview(code=code, exists=False)
 
 
@@ -101,20 +104,24 @@ def create_purchase(payload: PurchaseCreate, db: Session = Depends(get_db), curr
 
     product = _find_product(db, name, category, measuring_type)
     if not product:
-        code = _generate_sku(db, name, category, measuring_type)
+        unit_cost = round_to_2(payload.purchase_price / payload.count) if payload.count > 0 else 0.0
+        code = _next_numeric_code(db)
         product = models.Product(
             sku=code,
             name=name,
             category=category,
             measuring_type=measuring_type,
+            price_unit_count=1,
             description=None,
-            unit_price=payload.purchase_price,
+            unit_price=unit_cost,
             tax_rate=0.0,
             low_stock_threshold=10,
             is_active=True,
         )
         db.add(product)
         db.flush()
+    else:
+        _ensure_numeric_sku(db, product)
 
     location = _get_or_create_location(db)
     inventory = (
@@ -145,6 +152,16 @@ def create_purchase(payload: PurchaseCreate, db: Session = Depends(get_db), curr
         count=payload.count,
     )
     db.add(purchase)
+
+    unit_cost = round_to_2(payload.purchase_price / payload.count) if payload.count > 0 else 0.0
+    db.add(
+        models.PurchaseBatch(
+            product_id=product.id,
+            quantity=payload.count,
+            remaining_qty=payload.count,
+            unit_cost=unit_cost,
+        )
+    )
     db.commit()
     db.refresh(purchase)
     db.refresh(purchase, attribute_names=["product"])

@@ -60,28 +60,40 @@ class UserUpdate(BaseModel):
 
 
 class ProductBase(BaseModel):
-    sku: str = Field(min_length=1, max_length=80)
+    sku: str = Field(min_length=1, max_length=80, pattern="^[0-9]+$")
     name: str = Field(min_length=1, max_length=150)
     description: str | None = None
     category: str = Field(min_length=1, max_length=80)
     measuring_type: str = Field(default="pieces", min_length=2, max_length=20)
+    price_unit_count: int = Field(default=1, ge=1)
     unit_price: float = Field(ge=0)
     tax_rate: float = Field(ge=0, le=1)
     low_stock_threshold: int = Field(ge=0)
     is_active: bool = True
 
 
-class ProductCreate(ProductBase):
+class ProductCreate(BaseModel):
+    sku: str | None = Field(default=None, min_length=1, max_length=80, pattern="^[0-9]+$")
+    name: str = Field(min_length=1, max_length=150)
+    description: str | None = None
+    category: str = Field(min_length=1, max_length=80)
+    measuring_type: str = Field(default="pieces", min_length=2, max_length=20)
+    price_unit_count: int = Field(default=1, ge=1)
+    unit_price: float = Field(ge=0)
+    tax_rate: float = Field(ge=0, le=1)
+    low_stock_threshold: int = Field(ge=0)
+    is_active: bool = True
     initial_stock: int = Field(default=0, ge=0)
     storage_location_id: int | None = None
 
 
 class ProductUpdate(BaseModel):
-    sku: str | None = Field(default=None, min_length=1, max_length=80)
+    sku: str | None = Field(default=None, min_length=1, max_length=80, pattern="^[0-9]+$")
     name: str | None = Field(default=None, min_length=1, max_length=150)
     description: str | None = None
     category: str | None = Field(default=None, min_length=1, max_length=80)
     measuring_type: str | None = Field(default=None, min_length=2, max_length=20)
+    price_unit_count: int | None = Field(default=None, ge=1)
     unit_price: float | None = Field(default=None, ge=0)
     tax_rate: float | None = Field(default=None, ge=0, le=1)
     low_stock_threshold: int | None = Field(default=None, ge=0)
@@ -92,6 +104,9 @@ class ProductRead(ProductBase):
     id: int
     created_at: datetime
     current_stock: int = 0
+    fifo_min_cost: float = 0
+    fifo_max_cost: float = 0
+    fifo_avg_cost: float = 0
     storage_location: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -138,6 +153,17 @@ class PurchaseRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PurchaseBatchRead(BaseModel):
+    batch_id: int
+    product_id: int
+    original_quantity: int
+    remaining_quantity: int
+    unit_cost: float
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class PurchaseCodePreview(BaseModel):
     code: str
     exists: bool
@@ -161,11 +187,14 @@ class InvoiceCreate(BaseModel):
 class InvoiceItemRead(BaseModel):
     id: int
     product_id: int
+    product_code: str | None = None
     description: str | None = None
     quantity: int
     unit_price: float
     tax_rate: float
     line_total: float
+    cost_price: float | None = None
+    profit: float | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -189,6 +218,8 @@ class InvoiceRead(BaseModel):
     discount_amount: float
     tax_amount: float
     total_amount: float
+    cost_price: float | None = None
+    profit: float | None = None
     payment_status: str
     created_at: datetime
     items: list[InvoiceItemRead] = Field(default_factory=list)
@@ -203,3 +234,10 @@ class DashboardSummary(BaseModel):
     low_stock_count: int
     active_products: int
     total_employees: int
+
+
+class FifoCostPreview(BaseModel):
+    product_id: int
+    quantity: int
+    fifo_cost: float
+    available_stock: int

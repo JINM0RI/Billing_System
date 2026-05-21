@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_db, require_roles
 from app.db import models
@@ -17,8 +17,8 @@ def dashboard_summary(db: Session = Depends(get_db), current_user: models.User =
     active_products = db.query(func.count(models.Product.id)).filter(models.Product.is_active.is_(True)).scalar() or 0
     total_employees = db.query(func.count(models.User.id)).scalar() or 0
     low_stock_count = 0
-    for product in db.query(models.Product).all():
-        stock = sum(record.quantity_on_hand for record in product.inventory_records)
+    for product in db.query(models.Product).options(joinedload(models.Product.purchase_batches)).all():
+        stock = sum(batch.remaining_qty for batch in product.purchase_batches)
         if stock <= product.low_stock_threshold:
             low_stock_count += 1
 

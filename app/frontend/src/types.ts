@@ -15,12 +15,16 @@ export type Product = {
   description?: string | null;
   category: string;
   measuring_type: string;
+  price_unit_count: number;
   unit_price: number;
   tax_rate: number;
   low_stock_threshold: number;
   is_active: boolean;
   created_at: string;
   current_stock: number;
+  fifo_min_cost: number;
+  fifo_max_cost: number;
+  fifo_avg_cost: number;
   storage_location?: string | null;
 };
 
@@ -45,6 +49,15 @@ export type PurchaseRecord = {
   created_at: string;
 };
 
+export type PurchaseBatch = {
+  batch_id: number;
+  product_id: number;
+  original_quantity: number;
+  remaining_quantity: number;
+  unit_cost: number;
+  created_at: string;
+};
+
 export type InvoiceItemDraft = {
   product_id: number;
   quantity: number;
@@ -60,16 +73,21 @@ export type Invoice = {
   discount_amount: number;
   tax_amount: number;
   total_amount: number;
+  cost_price?: number | null;
+  profit?: number | null;
   payment_status: string;
   created_at: string;
   items: Array<{
     id: number;
     product_id: number;
+    product_code?: string | null;
     description?: string | null;
     quantity: number;
     unit_price: number;
     tax_rate: number;
     line_total: number;
+    cost_price?: number | null;
+    profit?: number | null;
   }>;
   payments: Array<{
     id: number;

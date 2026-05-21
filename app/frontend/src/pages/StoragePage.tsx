@@ -6,6 +6,7 @@ const measureOptions = ['kg', 'liter', 'pieces'];
 
 export default function PurchasePage() {
   const [records, setRecords] = useState<PurchaseRecord[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [form, setForm] = useState({
     category: '',
     product_name: '',
@@ -23,8 +24,14 @@ export default function PurchasePage() {
     setRecords(data);
   }
 
+  async function loadCategories() {
+    const data = await apiFetch<string[]>('/categories');
+    setCategories(data);
+  }
+
   useEffect(() => {
     loadRecords().catch(() => setRecords([]));
+    loadCategories().catch(() => setCategories([]));
   }, []);
 
   useEffect(() => {
@@ -95,7 +102,18 @@ export default function PurchasePage() {
         <p className="chip">Purchase management</p>
         <h3 className="mt-3 text-2xl font-semibold text-white">Add purchase</h3>
         <div className="mt-6 space-y-4">
-          <input className="field" placeholder="Category" value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} />
+          <input
+            className="field"
+            placeholder="Category"
+            list="category-options"
+            value={form.category}
+            onChange={(event) => setForm({ ...form, category: event.target.value })}
+          />
+          <datalist id="category-options">
+            {categories.map((category) => (
+              <option key={category} value={category} />
+            ))}
+          </datalist>
           <input className="field" placeholder="Product name" value={form.product_name} onChange={(event) => setForm({ ...form, product_name: event.target.value })} />
           <input className="field" placeholder="Purchased from" value={form.purchased_from} onChange={(event) => setForm({ ...form, purchased_from: event.target.value })} />
           <input className="field" type="number" placeholder="Purchase price" value={form.purchase_price} onChange={(event) => setForm({ ...form, purchase_price: event.target.value })} />
@@ -123,6 +141,7 @@ export default function PurchasePage() {
             <thead className="bg-white/5 text-slate-300">
               <tr>
                 <th className="px-4 py-3">Code</th>
+                <th className="px-4 py-3">Category</th>
                 <th className="px-4 py-3">Product</th>
                 <th className="px-4 py-3">Purchase price</th>
                 <th className="px-4 py-3">Measure</th>
@@ -135,6 +154,7 @@ export default function PurchasePage() {
               {records.map((record) => (
                 <tr key={record.id}>
                   <td className="px-4 py-3">{record.code}</td>
+                  <td className="px-4 py-3">{record.category}</td>
                   <td className="px-4 py-3">{record.product_name}</td>
                   <td className="px-4 py-3">Rs {record.purchase_price.toFixed(2)}</td>
                   <td className="px-4 py-3">{record.measuring_type}</td>

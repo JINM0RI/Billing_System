@@ -68,6 +68,7 @@ class Product(Base):
     description: Mapped[str | None] = mapped_column(Text)
     category: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
     measuring_type: Mapped[str] = mapped_column(String(20), default="pieces", nullable=False)
+    price_unit_count: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     unit_price: Mapped[float] = mapped_column(Float, nullable=False)
     tax_rate: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     low_stock_threshold: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
@@ -77,6 +78,7 @@ class Product(Base):
     inventory_records: Mapped[list["Inventory"]] = relationship(back_populates="product")
     invoice_items: Mapped[list["InvoiceItem"]] = relationship(back_populates="product")
     purchase_records: Mapped[list["PurchaseRecord"]] = relationship(back_populates="product")
+    purchase_batches: Mapped[list["PurchaseBatch"]] = relationship(back_populates="product")
 
     __table_args__ = (UniqueConstraint("name", "category", "measuring_type", name="uq_products_name_category_measure"),)
 
@@ -110,6 +112,19 @@ class PurchaseRecord(Base):
     product: Mapped[Product] = relationship(back_populates="purchase_records")
 
 
+class PurchaseBatch(Base):
+    __tablename__ = "purchase_batches"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False, index=True)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    remaining_qty: Mapped[int] = mapped_column(Integer, nullable=False)
+    unit_cost: Mapped[float] = mapped_column(Float, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    product: Mapped[Product] = relationship(back_populates="purchase_batches")
+
+
 class Invoice(Base):
     __tablename__ = "invoices"
 
@@ -121,6 +136,8 @@ class Invoice(Base):
     discount_amount: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     tax_amount: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     total_amount: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    cost_price: Mapped[float | None] = mapped_column(Float)
+    profit: Mapped[float | None] = mapped_column(Float)
     payment_status: Mapped[str] = mapped_column(String(30), default="pending", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
@@ -135,11 +152,14 @@ class InvoiceItem(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     invoice_id: Mapped[int] = mapped_column(ForeignKey("invoices.id"), nullable=False)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
+    product_code: Mapped[str | None] = mapped_column(String(80))
     description: Mapped[str | None] = mapped_column(Text)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     unit_price: Mapped[float] = mapped_column(Float, nullable=False)
     tax_rate: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     line_total: Mapped[float] = mapped_column(Float, nullable=False)
+    cost_price: Mapped[float | None] = mapped_column(Float)
+    profit: Mapped[float | None] = mapped_column(Float)
 
     invoice: Mapped[Invoice] = relationship(back_populates="items")
     product: Mapped[Product] = relationship(back_populates="invoice_items")

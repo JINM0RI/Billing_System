@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.api.deps import get_db, require_roles
 from app.db import models
 from app.schemas import InvoiceCreate, InvoiceRead
+from app.services.fifo import consume_fifo, round_to_2
 
 
 router = APIRouter(prefix="/invoices", tags=["billing"])
@@ -24,41 +25,52 @@ def create_invoice(payload: InvoiceCreate, db: Session = Depends(get_db), curren
 
     subtotal = 0.0
     tax_total = 0.0
+    cost_total = 0.0
 
     for item in payload.items:
         product = db.query(models.Product).options(joinedload(models.Product.inventory_records)).filter(models.Product.id == item.product_id).first()
         if not product:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Product {item.product_id} not found")
 
-        inventory_record = _select_inventory_record(product.inventory_records)
-        if not inventory_record or inventory_record.quantity_on_hand < item.quantity:
+        try:
+            item_cost = consume_fifo(db, product.id, item.quantity)
+        except ValueError:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Insufficient stock for {product.name}")
 
-        inventory_record.quantity_on_hand -= item.quantity
-        line_subtotal = product.unit_price * item.quantity
+        cost_total = round_to_2(cost_total + item_cost)
+
+        _consume_inventory(product.inventory_records, item.quantity)
+
+        line_subtotal = round_to_2(product.unit_price * item.quantity)
         tax_rate = payload.tax_rate_override if payload.tax_rate_override is not None else product.tax_rate
-        line_tax = line_subtotal * tax_rate
-        line_total = line_subtotal + line_tax
-        subtotal += line_subtotal
-        tax_total += line_tax
+        line_tax = round_to_2(line_subtotal * tax_rate)
+        line_total = round_to_2(line_subtotal + line_tax)
+        subtotal = round_to_2(subtotal + line_subtotal)
+        tax_total = round_to_2(tax_total + line_tax)
+        item_profit = round_to_2(line_subtotal - item_cost)
 
         db.add(
             models.InvoiceItem(
                 invoice_id=invoice.id,
                 product_id=product.id,
+                product_code=product.sku,
                 description=product.description,
                 quantity=item.quantity,
                 unit_price=product.unit_price,
                 tax_rate=tax_rate,
                 line_total=line_total,
+                cost_price=item_cost,
+                profit=item_profit,
             )
         )
 
-    total_amount = subtotal - payload.discount_amount + tax_total
+    total_amount = round_to_2(subtotal - payload.discount_amount + tax_total)
     invoice.subtotal = subtotal
     invoice.discount_amount = payload.discount_amount
     invoice.tax_amount = tax_total
     invoice.total_amount = total_amount
+    invoice.cost_price = round_to_2(cost_total)
+    invoice.profit = round_to_2((subtotal - payload.discount_amount) - cost_total)
     invoice.payment_status = "paid"
 
     db.add(
@@ -71,7 +83,8 @@ def create_invoice(payload: InvoiceCreate, db: Session = Depends(get_db), curren
     )
     db.commit()
     db.refresh(invoice)
-    return _load_invoice(db, invoice.id)
+    invoice_read = _load_invoice(db, invoice.id)
+    return invoice_read
 
 
 @router.get("", response_model=list[InvoiceRead])
@@ -88,9 +101,17 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), current_user: mo
     return _load_invoice(db, invoice.id)
 
 
-def _select_inventory_record(records: list[models.Inventory]) -> models.Inventory | None:
-    available_records = sorted(records, key=lambda record: record.quantity_on_hand, reverse=True)
-    return available_records[0] if available_records else None
+def _consume_inventory(records: list[models.Inventory], quantity: int) -> None:
+    if quantity <= 0:
+        return
+
+    remaining = quantity
+    for record in sorted(records, key=lambda entry: entry.quantity_on_hand, reverse=True):
+        if remaining <= 0:
+            break
+        used = min(record.quantity_on_hand, remaining)
+        record.quantity_on_hand -= used
+        remaining -= used
 
 
 def _load_invoice(db: Session, invoice_id: int) -> InvoiceRead:

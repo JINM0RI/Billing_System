@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import auth, dashboard, invoices, products, purchases, sales, users
+from app.api.routes import auth, categories, dashboard, invoices, products, purchases, sales, users
 from app.core.config import settings
 from app.db.init_db import init_db
 
@@ -26,6 +26,7 @@ app.include_router(purchases.router, prefix=settings.api_v1_prefix)
 app.include_router(invoices.router, prefix=settings.api_v1_prefix)
 app.include_router(sales.router, prefix=settings.api_v1_prefix)
 app.include_router(dashboard.router, prefix=settings.api_v1_prefix)
+app.include_router(categories.router, prefix=settings.api_v1_prefix)
 
 
 @app.on_event("startup")
